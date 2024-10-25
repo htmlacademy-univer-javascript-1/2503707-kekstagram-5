@@ -32,3 +32,18 @@ function extractNumber (input) {
   }
   return NaN;
 }
+
+
+function IsInWorkingHours(startOfDay, endOfDay,startOfMeeting, meetingDuration) {
+  const timeToMinutes = (time) => {
+    const [hours, minutes] = time.split(':'.map(Number));
+    return hours * 60 + minutes;
+  };
+
+  const startDay = timeToMinutes(startOfDay);
+  const endDay = timeToMinutes(endOfDay);
+  const startMeeting = timeToMinutes(startOfMeeting);
+  const endMeeting = startMeeting + meetingDuration;
+
+  return startMeeting >= startDay && endMeeting <= endDay;
+}
