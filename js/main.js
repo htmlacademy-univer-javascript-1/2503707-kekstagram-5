@@ -1,3 +1,3 @@
 import {getPictures} from './data.js';
-import {renderMiniatures} from './miniature.js';
-renderMiniatures(getPictures());
+import {renderGallery} from './gallery.js';
+renderGallery(getPictures());
