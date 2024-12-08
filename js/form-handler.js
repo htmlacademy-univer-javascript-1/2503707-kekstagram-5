@@ -1,5 +1,7 @@
 import { form, pristine, hashtagsInput, descriptionInput } from './validator.js';
 import { isEscapeKey } from './util.js';
+import {resetScale} from './scale.js';
+import {resetFilters} from './filters.js';
 
 const body = document.body;
 const fileInput = document.querySelector('.img-upload__input');
@@ -19,7 +21,8 @@ export const closeUploadForm = () => {
 export const openUploadForm = () => {
   uploadOverlay.classList.remove('hidden');
   body.classList.add('modal-open');
-
+  resetScale();
+  resetFilters();
   document.addEventListener('keydown', onDoEscape);
   cancelButton.addEventListener('click', closeUploadForm);
 };
