@@ -5,16 +5,14 @@ const getRandomInteger = (a, b) => {
   return Math.floor(result);
 };
 
-const getRandomArrayElement = (items) =>
-  items[getRandomInteger(0, items.length - 1)];
+const getRandomArrayElement = (elements) => elements[getRandomInteger(0, elements.length - 1)];
 
-const createIdGenerator = () => {
+const createId = () => {
   let lastGeneratedId = 0;
 
-  return () => {
-    lastGeneratedId += 1;
-    return lastGeneratedId;
-  };
+  return () => ++lastGeneratedId;
 };
 
-export {getRandomInteger, getRandomArrayElement, createIdGenerator};
+const isEscapeKey = (evt) => evt.key === 'Escape';
+
+export {createId, getRandomInteger, getRandomArrayElement, isEscapeKey};
