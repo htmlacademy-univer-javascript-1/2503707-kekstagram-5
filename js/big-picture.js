@@ -4,14 +4,14 @@ const commentListElement = bigPictureElement.querySelector('.social__comments');
 const commentsLoaderElement = bigPictureElement.querySelector('.comments-loader');
 const bodyElement = document.querySelector('body');
 const cancelButtonElement = bigPictureElement.querySelector('.big-picture__cancel');
-const commentElement = document.querySelector('#comment').content.querySelector('.social__comment');
+const commentElement = document.querySelector('.social__comment');
 
 const createComment = ({ avatar, name, message }) => {
   const comment = commentElement.cloneNode(true);
 
-  comment.querySelector('.social_picture').src = avatar;
-  comment.querySelector('.social_picture').alt = name;
-  comment.querySelector('.social_text').textContent = message;
+  comment.querySelector('.social__picture').src = avatar;
+  comment.querySelector('.social__picture').alt = name;
+  comment.querySelector('.social__text').textContent = message;
 
   return comment;
 };
