@@ -7,7 +7,6 @@ export const form = document.querySelector('.img-upload__form');
 export const hashtagsInput = document.querySelector('.text__hashtags');
 export const descriptionInput = document.querySelector('.text__description');
 
-
 export const pristine = new Pristine(form, {
   classTo: 'img-upload__field-wrapper',
   errorTextParent: 'img-upload__field-wrapper',
