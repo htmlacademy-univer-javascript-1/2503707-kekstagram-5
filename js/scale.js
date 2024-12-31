@@ -1,39 +1,26 @@
-const STEP_SCALE = 25;
-const MIN_SCALE = 25;
-const MAX_SCALE = 100;
-const DEFAULT_SCALE = MAX_SCALE;
+const scaleInput = document.querySelector('.scale__control--value');
+const increaseButton = document.querySelector('.scale__control--bigger');
+const decreaseButton = document.querySelector('.scale__control--smaller');
+const imagePreview = document.querySelector('.img-upload__preview');
+const maxValue = 100;
+const minValue = 25;
+const scaleStep = 25;
 
-const uploadImage = document.querySelector('.img-upload__preview img');
-const scaleControlValue = document.querySelector('.scale__control--value');
-const scaleSmallerButton = document.querySelector('.scale__control--smaller');
-const scaleBiggerButton = document.querySelector('.scale__control--bigger');
-
-let currentScale = DEFAULT_SCALE;
-
-const updateScale = () => {
-  scaleControlValue.value = `${currentScale}%`;
-  uploadImage.style.transform = `scale(${currentScale / 100})`;
-};
-
-function onSmallerButtonClick () {
-  if (currentScale > MIN_SCALE) {
-    currentScale -= STEP_SCALE;
-    updateScale();
-  }
+function updateScale(value) {
+  scaleInput.value = `${value}%`;
+  imagePreview.style.transform = `scale(${value / 100})`;
 }
 
-function onBiggerButtonClick () {
-  if (currentScale < MAX_SCALE) {
-    currentScale += STEP_SCALE;
-    updateScale();
-  }
+function handleScaleChange(isIncrease) {
+  let currentScale = parseInt(scaleInput.value.replace('%', ''), 10);
+  currentScale += isIncrease ? scaleStep : -scaleStep;
+  currentScale = Math.min(maxValue, Math.max(minValue, currentScale));
+  updateScale(currentScale);
 }
-const resetScale = () => {
-  currentScale = DEFAULT_SCALE;
-  updateScale();
-};
 
-scaleSmallerButton.addEventListener('click', onSmallerButtonClick);
-scaleBiggerButton.addEventListener('click', onBiggerButtonClick);
+function scaleImg() {
+  decreaseButton.addEventListener('click', () => handleScaleChange(false));
+  increaseButton.addEventListener('click', () => handleScaleChange(true));
+}
 
-export {resetScale};
+export { scaleImg };
