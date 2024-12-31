@@ -1,67 +1,62 @@
-import { renderThumbnails } from './rendering.js';
+import { renderPhotos } from './drawer.js';
 import { debounce } from './util.js';
-import { fetchData } from './api.js';
-import { showLoadError } from './message.js';
+import { getData } from './api.js';
+import { displayLoadError } from './messages.js';
 
 const RANDOM_PHOTOS_LIMIT = 10;
-const DEBOUNCE_DELAY = 500;
+const TIMEOUT = 500;
 
-const filterType = {
+let photos;
+
+const FilterType = {
   DEFAULT: 'default',
-  DISCUSSED: 'discussed',
   RANDOM: 'random',
+  DISCUSSED: 'discussed',
 };
 
-let initialPhotos;
-const filtersContainer = document.querySelector('.img-filters');
-const filterButtons = filtersContainer.querySelectorAll('.img-filters__button');
-const defaultFilterButton = filtersContainer.querySelector('#filter-default');
-const randomFilterButton = filtersContainer.querySelector('#filter-random');
-const discussedFilterButton = filtersContainer.querySelector('#filter-discussed');
+const imgFiltersElement = document.querySelector('.img-filters');
+const filterButtons = imgFiltersElement.querySelectorAll('.img-filters__button');
+const filterDefaultButton = imgFiltersElement.querySelector('#filter-default');
+const filterRandomButton = imgFiltersElement.querySelector('#filter-random');
+const filterDiscussedButton = imgFiltersElement.querySelector('#filter-discussed');
 
 const showFilters = () => {
-  filtersContainer.classList.remove('img-filters--inactive');
+  imgFiltersElement.classList.remove('img-filters--inactive');
 };
 
-const setActiveButton = (activeButton) => {
-  filterButtons.forEach((button) => button.classList.remove('img-filters__button--active'));
-  activeButton.classList.add('img-filters__button--active');
+const getRandomPhotos = (pictures) => {
+  const randomPhotos = pictures.sort(() => 0.5 - Math.random());
+  return randomPhotos.slice(0, RANDOM_PHOTOS_LIMIT);
 };
 
-const getRandomPhotos = (pictures) => [...pictures].sort(() => 0.5 - Math.random()).slice(0, RANDOM_PHOTOS_LIMIT);
+const getDiscussedPhotos = (pictures) => pictures.slice().sort((a, b) => b.comments.length - a.comments.length);
 
-const getDiscussedPhotos = (pictures) => [...pictures].sort((a, b) => b.comments.length - a.comments.length);
-
-
-const applyFilter = (filter, button) => {
+const onFilterChange = debounce((filter, button) => {
   let filteredPhotos;
-
   switch (filter) {
-    case filterType.DEFAULT:
-      filteredPhotos = initialPhotos;
+    case FilterType.DEFAULT:
+      filteredPhotos = photos;
       break;
-    case filterType.RANDOM:
-      filteredPhotos = getRandomPhotos(initialPhotos);
+    case FilterType.RANDOM:
+      filteredPhotos = getRandomPhotos(photos);
       break;
-    case filterType.DISCUSSED:
-      filteredPhotos = getDiscussedPhotos(initialPhotos);
+    case FilterType.DISCUSSED:
+      filteredPhotos = getDiscussedPhotos(photos);
       break;
-    default:
-      filteredPhotos = initialPhotos;
   }
-  renderThumbnails(filteredPhotos);
-  setActiveButton(button);
-};
+  renderPhotos(filteredPhotos);
+  filterButtons.forEach((btn) => {
+    btn.classList.remove('img-filters__button--active');
+  });
+  button.classList.add('img-filters__button--active');
+}, TIMEOUT);
 
-const debouncedFilterChange = debounce(applyFilter, DEBOUNCE_DELAY);
+filterDefaultButton.addEventListener('click', () => onFilterChange(FilterType.DEFAULT, filterDefaultButton));
+filterRandomButton.addEventListener('click', () => onFilterChange(FilterType.RANDOM, filterRandomButton));
+filterDiscussedButton.addEventListener('click', () => onFilterChange(FilterType.DISCUSSED, filterDiscussedButton));
 
-
-defaultFilterButton.addEventListener('click', () => debouncedFilterChange(filterType.DEFAULT, defaultFilterButton));
-randomFilterButton.addEventListener('click', () => debouncedFilterChange(filterType.RANDOM, randomFilterButton));
-discussedFilterButton.addEventListener('click', () => debouncedFilterChange(filterType.DISCUSSED, discussedFilterButton));
-
-fetchData((data) => {
-  initialPhotos = data;
+getData((data) => {
+  photos = data;
   showFilters();
-  renderThumbnails(initialPhotos);
-}, showLoadError);
+  renderPhotos(photos);
+}, displayLoadError);

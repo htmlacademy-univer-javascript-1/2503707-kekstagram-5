@@ -1,34 +1,57 @@
-import { onEscapePress } from './util.js';
+import { isEscapeKey } from './util.js';
 
-const successMsgTemplate = document.querySelector('#success').content.querySelector('.success');
-const errorMsgTemplate = document.querySelector('#error').content.querySelector('.error');
 const bodyElement = document.body;
 
-const createMessage = (template) => () => {
-  const messageElement = template.cloneNode(true);
-  const closeBtn = messageElement.querySelector('button');
+const removeMessage = (evt, messageSelector) => {
+  const messageElement = document.querySelector(messageSelector);
+  if (messageElement) {
+    const isClickOnButton = evt.target.classList.contains(`${messageSelector.slice(1)}__button`);
+    const isClickOutsideInner = !evt.target.classList.contains(`${messageSelector.slice(1)}__inner`);
 
-  const onEscKeydown = (evt) => onEscapePress(evt, removeMessage);
-  const onOutsideClick = (evt) => {
-    if (evt.target === messageElement) {
-      removeMessage();
+    if (isEscapeKey(evt) || (evt.type === 'click' && (isClickOnButton || isClickOutsideInner))) {
+      bodyElement.removeEventListener('click', removeMessage);
+      bodyElement.removeEventListener('keydown', removeMessage);
+      messageElement.remove();
     }
-  };
-
-  function removeMessage() {
-    messageElement.remove();
-    document.removeEventListener('keydown', onEscKeydown);
-    document.removeEventListener('click', onOutsideClick);
   }
+};
 
-  closeBtn.addEventListener('click', removeMessage);
-  document.addEventListener('keydown', onEscKeydown);
-  document.addEventListener('click', onOutsideClick);
 
+const displayMessage = (templateId) => {
+  const messageTemplate = document.querySelector(templateId).content;
+  const messageElement = messageTemplate.cloneNode(true);
   bodyElement.appendChild(messageElement);
 };
 
-const showSuccessMessage = createMessage(successMsgTemplate);
-const showErrorMessage = createMessage(errorMsgTemplate);
 
-export { showSuccessMessage, showErrorMessage };
+const displayLoadError = () => {
+  const alertElement = document.createElement('div');
+  alertElement.classList.add('load-error');
+  alertElement.textContent = 'Не удалось загрузить данные. Пожалуйста, обновите страницу.';
+  document.body.appendChild(alertElement);
+};
+
+const displayFormError = () => {
+  const alertElement = document.createElement('div');
+  alertElement.classList.add('load-error');
+  alertElement.textContent = 'Не удалось отправить форму. Пожалуйста, исправьте неверные поля и повторите попытку.';
+  document.body.appendChild(alertElement);
+
+  setTimeout(() => {
+    alertElement.remove();
+  }, 5000);
+};
+
+const showErrorMessage = () => {
+  bodyElement.addEventListener('keydown', (evt) => removeMessage(evt, '.error'));
+  bodyElement.addEventListener('click', (evt) => removeMessage(evt, '.error'));
+  displayMessage('#error');
+};
+
+const showSuccessMessage = () => {
+  bodyElement.addEventListener('keydown', (evt) => removeMessage(evt, '.success'));
+  bodyElement.addEventListener('click', (evt) => removeMessage(evt, '.success'));
+  displayMessage('#success');
+};
+
+export { displayLoadError, displayFormError, showSuccessMessage, showErrorMessage };

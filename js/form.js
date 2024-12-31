@@ -1,134 +1,96 @@
-/* eslint-disable no-use-before-define */
-import { onEscapePress } from './util.js';
-import { showSuccessMessage, showErrorMessage } from './send-message.js';
-import { fetchData } from './api.js';
+import { isEscapeKey } from './util.js';
+import { resetScale } from './scale.js';
+import { resetEffect } from './slider.js';
+import { sendData} from './api.js';
+import { showErrorMessage, showSuccessMessage, displayFormError } from './messages.js';
+import './load.js';
 
 const MAX_HASHTAG_COUNT = 5;
-const MAX_DESCRIPTION_LENGTH = 140;
-const EFFECT_LEVEL_HIDDEN_CLASS = 'hidden';
-const MODAL_OPEN_CLASS = 'modal-open';
+const MAX_COMMENT_LENGTH = 140;
+const HASHTAG_REGEX = /^#[a-zа-яё0-9]{1,19}$/i;
 
-const imgUploadPreview = document.querySelector('.img-upload__preview img');
-const scaleControlValue = document.querySelector('.scale__control--value');
-const fileInput = document.querySelector('.img-upload__input');
-const uploadOverlay = document.querySelector('.img-upload__overlay');
+const ErrorMessages = {
+  INVALID_HASHTAG: 'Содержит недопустимые символы или неверный формат',
+  REPEATED_HASHTAG: 'Хэш-теги не должны повторяться',
+  HASHTAG_LIMIT: `Максимальное количество хэш-тегов - ${MAX_HASHTAG_COUNT}`,
+  COMMENT_LENGTH: `Максимальная длина ${MAX_COMMENT_LENGTH} символов`
+};
+
 const bodyElement = document.body;
 const uploadForm = document.querySelector('.img-upload__form');
-const descriptionInput = uploadForm.querySelector('.text__description');
-const hashtagInput = uploadForm.querySelector('.text__hashtags');
-const submitBtn = uploadForm.querySelector('#upload-submit');
-const closeBtn = document.querySelector('.img-upload__cancel');
-const effectPreviews = document.querySelectorAll('.effects__preview');
+const fileInput = document.querySelector('.img-upload__input');
+const closeButton = document.querySelector('.img-upload__cancel');
+const uploadOverlay = document.querySelector('.img-upload__overlay');
+const hashtagInput = document.querySelector('.text__hashtags');
+const commentInput = document.querySelector('.text__description');
+const submitButton = document.querySelector('.img-upload__submit');
 
 
-const HASHTAG_REGEX = /^#[a-zA-Zа-яёА-ЯЁ0-9]{1,19}$/i;
-const ErrorMessages = {
-  invalidCount: 'Количество хэштегов больше пяти!',
-  invalidUnique: 'Хэштеги не должны повторяться!',
-  invalidReg: 'Некорректный хэштег!'
-};
-
-let currentErrorType = '';
-
-const validate = new Pristine(uploadForm, {
+const pristine = new Pristine(uploadForm, {
   classTo: 'img-upload__field-wrapper',
-  errorClass: 'form__item--invalid',
-  successClass: 'form__item--valid',
   errorTextParent: 'img-upload__field-wrapper',
-  errorTextTag: 'p',
-  errorTextClass: 'form__error'
 });
 
-const handleFileInputChange = () => {
-  const selectedFile = fileInput.files[0];
-  if (selectedFile) {
-    const objectURL = URL.createObjectURL(selectedFile);
-    imgUploadPreview.src = objectURL;
-    effectPreviews.forEach((preview) => {
-      preview.style.backgroundImage = `url("${objectURL}")`;
-    });
-    uploadOverlay.classList.remove(EFFECT_LEVEL_HIDDEN_CLASS);
-    bodyElement.classList.add(MODAL_OPEN_CLASS);
-    document.addEventListener('keydown', onDocumentKeydown);
-  }
+const getHashtags = (input) => input.toLowerCase().trim().split(/\s+/).filter(Boolean);
+const validateHashtag = (input) => getHashtags(input).every((tag) => HASHTAG_REGEX.test(tag));
+const validateUniqueHashtags = (input) => getHashtags(input).length === new Set(getHashtags(input)).size;
+const validateHashtagLimit = (input) => getHashtags(input).length <= MAX_HASHTAG_COUNT;
+
+pristine.addValidator(hashtagInput, validateHashtag, ErrorMessages.INVALID_HASHTAG);
+pristine.addValidator(hashtagInput, validateUniqueHashtags, ErrorMessages.REPEATED_HASHTAG);
+pristine.addValidator(hashtagInput, validateHashtagLimit, ErrorMessages.HASHTAG_LIMIT);
+pristine.addValidator(commentInput, (value) => value.length <= MAX_COMMENT_LENGTH, ErrorMessages.COMMENT_LENGTH);
+
+const validateForm = () => pristine.validate();
+
+const openUploadModal = () => {
+  uploadOverlay.classList.remove('hidden');
+  bodyElement.classList.add('modal-open');
+  resetScale();
+  resetEffect();
+  document.addEventListener('keydown', onDocumentKeydown);
 };
 
-const openUploadForm = () => {
-  fileInput.addEventListener('change', handleFileInputChange);
-};
-
-const closeForm = () => {
-  uploadOverlay.classList.add(EFFECT_LEVEL_HIDDEN_CLASS);
-  bodyElement.classList.remove(MODAL_OPEN_CLASS);
-  fileInput.value = '';
-  descriptionInput.value = '';
-  hashtagInput.value = '';
-  validate.reset();
+const closeUploadModal = () => {
   uploadForm.reset();
-  imgUploadPreview.style.transform = 'scale(1)';
-  imgUploadPreview.style.filter = '';
-  document.querySelector('.img-upload__effect-level').classList.add(EFFECT_LEVEL_HIDDEN_CLASS);
-  scaleControlValue.value = '100%';
+  pristine.reset();
+  uploadOverlay.classList.add('hidden');
+  bodyElement.classList.remove('modal-open');
   document.removeEventListener('keydown', onDocumentKeydown);
 };
 
-const validateHashtags = (value) => {
-  const hashtags = value.split(/\s+/).filter(Boolean);
-
-  if (hashtags.length > MAX_HASHTAG_COUNT) {
-    currentErrorType = 'invalidCount';
-    return false;
-  }
-
-  const lowerCaseHashtags = hashtags.map((el) => el.toLowerCase());
-  const uniqueHashtags = new Set(lowerCaseHashtags);
-  if (uniqueHashtags.size !== hashtags.length) {
-    currentErrorType = 'invalidUnique';
-    return false;
-  }
-
-  for (const hashtag of hashtags) {
-    if (!HASHTAG_REGEX.test(hashtag)) {
-      currentErrorType = 'invalidReg';
-      return false;
-    }
-  }
-
-  return true;
-};
-
-const validateDescription = (value) => value.length <= MAX_DESCRIPTION_LENGTH;
-
-validate.addValidator(hashtagInput, validateHashtags, () => ErrorMessages[currentErrorType]);
-validate.addValidator(descriptionInput, validateDescription, 'Превышена длинна комментария!');
-
-const handleSuccess = () => {
-  submitBtn.disabled = false;
-  closeForm();
-  showSuccessMessage();
-};
-
-const handleError = () => {
-  submitBtn.disabled = false;
-  document.removeEventListener('keydown', onDocumentKeydown);
-  showErrorMessage();
-};
-
-uploadForm.addEventListener('submit', (evt) => {
+const handleFormSubmit = (evt) => {
   evt.preventDefault();
-  if (validate.validate()) {
-    submitBtn.disabled = true;
-    const formData = new FormData(uploadForm);
-    fetchData(formData)
-      .then(handleSuccess)
-      .catch(handleError);
-  }
-});
-const onDocumentKeydown = (evt) => {
-  if (document.activeElement !== descriptionInput && document.activeElement !== hashtagInput) {
-    onEscapePress(evt, closeForm);
+  submitButton.disabled = true;
+
+  if (pristine.validate()) {
+    sendData(
+      () => {
+        showSuccessMessage();
+        closeUploadModal();
+        submitButton.disabled = false;
+      },
+      () => {
+        showErrorMessage();
+        submitButton.disabled = false;
+      },
+      new FormData(uploadForm)
+    );
+  } else {
+    displayFormError();
+    submitButton.disabled = false;
   }
 };
 
-closeBtn.addEventListener('click', closeForm);
-openUploadForm();
+function onDocumentKeydown(evt) {
+  if (isEscapeKey(evt) && !(document.activeElement === hashtagInput || document.activeElement === commentInput)) {
+    evt.preventDefault();
+    closeUploadModal();
+  }
+}
+
+hashtagInput.addEventListener('change', validateForm);
+commentInput.addEventListener('change', validateForm);
+fileInput.addEventListener('change', openUploadModal);
+submitButton.addEventListener('click', handleFormSubmit);
+closeButton.addEventListener('click', closeUploadModal);
