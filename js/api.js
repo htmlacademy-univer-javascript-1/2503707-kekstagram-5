@@ -1,24 +1,32 @@
-const url = 'https://29.javascript.htmlacademy.pro/kekstagram';
+const ServerUrl = 'https://29.javascript.htmlacademy.pro/kekstagram';
+const ApiRoutes = {
+  FetchData: '/data',
+  SubmitData: '/'
+};
 
-const getData = (load, fail) => {
-  fetch(`${url}/data`)
+const HttpMethods = {
+  Get: 'GET',
+  Post: 'POST'
+};
+
+const ErrorMessages = {
+  FetchData: 'Не удалось загрузить данные. Попробуйте обновить страницу',
+  SubmitData: 'Не удалось отправить форму. Попробуйте ещё раз'
+};
+
+const fetchData = (route, errorMessage, method = HttpMethods.Get, requestBody = null) =>
+  fetch(`${ServerUrl}${route}`, { method, body: requestBody })
     .then((response) => {
-      if (!response.ok) {
-        throw new Error();
+      if (response.ok) {
+        return response.json();
       }
-      return response.json();
+      throw new Error();
     })
-    .then(load)
-    .catch(fail);
-};
+    .catch(() => {
+      throw new Error(errorMessage);
+    });
 
-const sendData = (load, fail, body) => {
-  fetch(url, {
-    method: 'POST',
-    body: body,
-  })
-    .then(load)
-    .catch(fail);
-};
+const getData = () => fetchData(ApiRoutes.FetchData, ErrorMessages.FetchData);
+const sendData = (requestBody) => fetchData(ApiRoutes.SubmitData, ErrorMessages.SubmitData, HttpMethods.Post, requestBody);
 
-export {getData, sendData};
+export { getData, sendData };

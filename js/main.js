@@ -1,3 +1,11 @@
-import './drawer.js';
-import './api.js';
-import './util.js';
+import './form.js';
+import './filter.js';
+
+import { renderPhotos } from './drawer.js';
+import { getData } from './api.js';
+
+const onPhotosLoad = (photos) => {
+  renderPhotos(photos);
+};
+
+getData(onPhotosLoad);
