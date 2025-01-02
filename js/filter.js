@@ -21,7 +21,9 @@ const getFilterPictures = () => sortFunctions[currentFilter]();
 const setOnFilterClick = (callback) => {
   imageFilters.addEventListener('click', (evt) => {
     const clickedButton = evt.target.closest('.img-filters__button');
-    if (!clickedButton || clickedButton.id === currentFilter) return;
+    if (!clickedButton || clickedButton.id === currentFilter) {
+      return;
+    }
 
     imageFilters.querySelector('.img-filters__button--active').classList.remove('img-filters__button--active');
     clickedButton.classList.add('img-filters__button--active');

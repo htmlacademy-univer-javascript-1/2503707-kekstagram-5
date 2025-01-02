@@ -10,60 +10,61 @@ const ErrorText = {
   INVALIDE_PATTERN: 'Неправильный хэштег'
 };
 
-const body = document.querySelector('body');
 const formImageUpload = document.querySelector('.img-upload__form');
 const overlayImageUpload = formImageUpload.querySelector('.img-upload__overlay');
-const buttonImageUpload = formImageUpload.querySelector('.img-upload__submit');
+const body = document.querySelector('body');
 const textHashtags = formImageUpload.querySelector('.text__hashtags');
+const buttonImageUpload = formImageUpload.querySelector('.img-upload__submit');
 
 const pristine = new Pristine(formImageUpload, {
   classTo: 'img-upload__field-wrapper',
   errorTextParent: 'img-upload__field-wrapper',
 });
 
-const toggleModal = (isVisible) => {
-  overlayImageUpload.classList.toggle('hidden', !isVisible);
-  body.classList.toggle('modal-open', isVisible);
-  if (isVisible) {
-    document.addEventListener('keydown', onDocumentKeydown);
-  } else {
-    document.removeEventListener('keydown', onDocumentKeydown);
-    resetScale();
-    reset();
-  }
+const showModal = () => {
+  overlayImageUpload.classList.remove('hidden');
+  body.classList.add('modal-open');
+  document.addEventListener('keydown', onDocumentKeydown);
 };
 
 const hideModal = () => {
   formImageUpload.reset();
   pristine.reset();
-  toggleModal(false);
+  overlayImageUpload.classList.add('hidden');
+  body.classList.remove('modal-open');
+  document.removeEventListener('keydown', onDocumentKeydown);
+  resetScale();
+  reset();
 };
 
-const normalizeTags = (tagString) => tagString.trim().split(' ').filter(Boolean);
-const isTextFieldFocused = () => [textHashtags, formImageUpload.querySelector('.text__description')].includes(document.activeElement);
+const normalizeTags = (tagString) => tagString.trim().split(' ').filter((tag) => Boolean(tag.length));
+const isTextFieldFocused = () => document.activeElement === textHashtags || document.activeElement === formImageUpload.querySelector('.text__description');
 
 const hasValidCount = (value) => normalizeTags(value).length <= MAX_HASHTAG_COUNT;
 const hasValidTags = (value) => normalizeTags(value).every((tag) => VALID_SYMBOLS.test(tag));
-const hasUniqueTags = (value) => {
+const hasUnidueTags = (value) => {
   const lowerCaseTags = normalizeTags(value).map((tag) => tag.toLowerCase());
   return lowerCaseTags.length === new Set(lowerCaseTags).size;
 };
 
-const onDocumentKeydown = (evt) => {
-  if (isEscapeKey(evt) && !isTextFieldFocused()) {
+function onDocumentKeydown(evt) {
+  if ((isEscapeKey(evt)) && !isTextFieldFocused()) {
     evt.preventDefault();
     hideModal();
   }
-};
+}
+
+const onCancelButtonClick = () => hideModal();
+const onFileInputChange = () => showModal();
 
 const setUpValidators = () => {
   pristine.addValidator(textHashtags, hasValidCount, ErrorText.INVALID_COUNT, 3, true);
   pristine.addValidator(textHashtags, hasValidTags, ErrorText.INVALID_PATTERN, 2, true);
-  pristine.addValidator(textHashtags, hasUniqueTags, ErrorText.NOT_UNIQUE, 1, true);
+  pristine.addValidator(textHashtags, hasUnidueTags, ErrorText.NOT_UNIQUE, 1, true);
 };
 
-formImageUpload.querySelector('.img-upload__input').addEventListener('change', () => toggleModal(true));
-formImageUpload.querySelector('.img-upload__cancel').addEventListener('click', hideModal);
+formImageUpload.querySelector('.img-upload__input').addEventListener('change', onFileInputChange);
+formImageUpload.querySelector('.img-upload__cancel').addEventListener('click', onCancelButtonClick);
 setUpValidators();
 init();
 
@@ -78,4 +79,4 @@ const setOnFormSubmit = (callback) => {
   });
 };
 
-export { hideModal, setOnFormSubmit };
+export{ hideModal, setOnFormSubmit };

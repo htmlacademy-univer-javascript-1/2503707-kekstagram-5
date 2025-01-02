@@ -1,19 +1,19 @@
-import { isEscapeKey } from './util.js';
+import {isEscapeKey} from './util.js';
 
 const COMMENTS_STEP = 5;
 
-const body = document.querySelector('body');
 const bigPicture = document.querySelector('.big-picture');
 const commentsCount = bigPicture.querySelector('.comments-count');
 const commentsShownCount = bigPicture.querySelector('.comments-shown-count');
+const socialComments = bigPicture.querySelector('.social__comments');
 const commentsLoader = bigPicture.querySelector('.comments-loader');
-const commentFragment = document.createDocumentFragment();
+const body = document.querySelector('body');
 const canselButtonBigPicture = bigPicture.querySelector('.big-picture__cancel');
 const bigPictureImage = bigPicture.querySelector('.big-picture__img img');
 const likesCount = bigPicture.querySelector('.likes-count');
 const socialCaption = bigPicture.querySelector('.social__caption');
-const socialComments = bigPicture.querySelector('.social__comments');
 const socialFooterText = bigPicture.querySelector('.social__footer-text');
+const commentFragment = document.createDocumentFragment();
 
 let commentsShown = COMMENTS_STEP;
 let currentComments = [];
