@@ -1,11 +1,24 @@
-import './form.js';
-import './filter.js';
+import { renderGallery } from './gallery.js';
+import { showSuccessMessage, showErrorMessage } from './messages.js';
+import { hideModal, setOnFormSubmit } from './form.js';
+import { getData, sendData } from './api.js';
+import { showAlert, debounce } from './util.js';
+import { init, getFilterPictures } from './filter.js';
+import './load.js';
 
-import { renderPhotos } from './drawer.js';
-import { getData } from './api.js';
+try {
+  init(await getData(), debounce(renderGallery));
+  renderGallery(getFilterPictures());
+} catch (err) {
+  showAlert(err.message);
+}
 
-const onPhotosLoad = (photos) => {
-  renderPhotos(photos);
-};
-
-getData(onPhotosLoad);
+setOnFormSubmit(async (data) => {
+  try {
+    await sendData(data);
+    hideModal();
+    showSuccessMessage();
+  } catch {
+    showErrorMessage();
+  }
+});
