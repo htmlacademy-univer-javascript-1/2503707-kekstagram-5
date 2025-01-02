@@ -1,26 +1,22 @@
-const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png'];
+const FILE_TYPES = ['gif', 'jpg', 'jpeg', 'png'];
 
-const fileInput = document.querySelector('.img-upload__input');
-const previewImage = document.querySelector('.img-upload__preview img');
-const effectImages = document.querySelectorAll('.effects__item .effects__preview');
+const uploadFile = document.querySelector('#upload-file');
 
+const onUploadImageChange = () => {
+  const file = uploadFile.files[0];
 
-const handleFileUpload = () => {
-  const file = fileInput.files[0];
-  if (!file) {
-    return;
-  }
+  if (FILE_TYPES.some((it) => file.name.toLowerCase().endsWith(it))) {
+    const reader = new FileReader();
 
-  const filename = file.name.toLowerCase();
-  const isValidExtension = ALLOWED_EXTENSIONS.some((ext) => filename.endsWith(ext));
-
-  if (isValidExtension) {
-    const imageURL = URL.createObjectURL(file);
-    previewImage.src = imageURL;
-    effectImages.forEach((img) => {
-      img.style.backgroundImage = `url(${imageURL})`;
+    reader.addEventListener('load', () => {
+      document.querySelector('.img-upload__preview img').src = reader.result;
+      document.querySelector('.effects__list').querySelectorAll('span').forEach((evt) => {
+        evt.style.backgroundImage = `url(${reader.result})`;
+      });
     });
+
+    reader.readAsDataURL(file);
   }
 };
 
-fileInput.addEventListener('change', handleFileUpload);
+uploadFile.addEventListener('change', onUploadImageChange);
