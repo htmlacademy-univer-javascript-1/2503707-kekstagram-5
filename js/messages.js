@@ -1,57 +1,43 @@
 import { isEscapeKey } from './util.js';
 
-const bodyElement = document.body;
+const successMessage = document.querySelector('#success').content.querySelector('.success');
+const errorMessage = document.querySelector('#error').content.querySelector('.error');
+const body = document.querySelector('body');
 
-const removeMessage = (evt, messageSelector) => {
-  const messageElement = document.querySelector(messageSelector);
-  if (messageElement) {
-    const isClickOnButton = evt.target.classList.contains(`${messageSelector.slice(1)}__button`);
-    const isClickOutsideInner = !evt.target.classList.contains(`${messageSelector.slice(1)}__inner`);
-
-    if (isEscapeKey(evt) || (evt.type === 'click' && (isClickOnButton || isClickOutsideInner))) {
-      bodyElement.removeEventListener('click', removeMessage);
-      bodyElement.removeEventListener('keydown', removeMessage);
-      messageElement.remove();
-    }
+const onDocumentKeydown = (evt) => {
+  if (isEscapeKey(evt)) {
+    evt.preventDefault();
+    hideMessage();
   }
 };
 
+function hideMessage() {
+  const messageElement = document.querySelector('.success') || document.querySelector('.error');
+  messageElement.remove();
+  document.removeEventListener('keydown', onDocumentKeydown);
+  body.removeEventListener('click', onBodyClick);
+}
 
-const displayMessage = (templateId) => {
-  const messageTemplate = document.querySelector(templateId).content;
-  const messageElement = messageTemplate.cloneNode(true);
-  bodyElement.appendChild(messageElement);
-};
+function onBodyClick(evt) {
+  if (evt.target.closest('.success__inner') || evt.target.closest('.error__inner')) {
+    return;
+  }
+  hideMessage();
+}
 
-
-const displayLoadError = () => {
-  const alertElement = document.createElement('div');
-  alertElement.classList.add('load-error');
-  alertElement.textContent = 'Не удалось загрузить данные. Пожалуйста, обновите страницу.';
-  document.body.appendChild(alertElement);
-};
-
-const displayFormError = () => {
-  const alertElement = document.createElement('div');
-  alertElement.classList.add('load-error');
-  alertElement.textContent = 'Не удалось отправить форму. Пожалуйста, исправьте неверные поля и повторите попытку.';
-  document.body.appendChild(alertElement);
-
-  setTimeout(() => {
-    alertElement.remove();
-  }, 5000);
-};
-
-const showErrorMessage = () => {
-  bodyElement.addEventListener('keydown', (evt) => removeMessage(evt, '.error'));
-  bodyElement.addEventListener('click', (evt) => removeMessage(evt, '.error'));
-  displayMessage('#error');
+const showMessage = (messageElement, closeButtonClass) => {
+  body.append(messageElement);
+  document.addEventListener('keydown', onDocumentKeydown);
+  body.addEventListener('click', onBodyClick);
+  messageElement.querySelector(closeButtonClass).addEventListener('click', hideMessage);
 };
 
 const showSuccessMessage = () => {
-  bodyElement.addEventListener('keydown', (evt) => removeMessage(evt, '.success'));
-  bodyElement.addEventListener('click', (evt) => removeMessage(evt, '.success'));
-  displayMessage('#success');
+  showMessage(successMessage, '.success__button');
 };
 
-export { displayLoadError, displayFormError, showSuccessMessage, showErrorMessage };
+const showErrorMessage = () => {
+  showMessage(errorMessage, '.error__button');
+};
+
+export{showSuccessMessage, showErrorMessage};
