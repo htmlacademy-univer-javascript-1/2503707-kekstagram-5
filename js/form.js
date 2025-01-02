@@ -1,96 +1,82 @@
 import { isEscapeKey } from './util.js';
 import { resetScale } from './scale.js';
-import { resetEffect } from './slider.js';
-import { sendData} from './api.js';
-import { showErrorMessage, showSuccessMessage, displayFormError } from './messages.js';
-import './load.js';
+import { init, reset } from './effects.js';
 
 const MAX_HASHTAG_COUNT = 5;
-const MAX_COMMENT_LENGTH = 140;
-const HASHTAG_REGEX = /^#[a-zа-яё0-9]{1,19}$/i;
-
-const ErrorMessages = {
-  INVALID_HASHTAG: 'Содержит недопустимые символы или неверный формат',
-  REPEATED_HASHTAG: 'Хэш-теги не должны повторяться',
-  HASHTAG_LIMIT: `Максимальное количество хэш-тегов - ${MAX_HASHTAG_COUNT}`,
-  COMMENT_LENGTH: `Максимальная длина ${MAX_COMMENT_LENGTH} символов`
+const VALID_SYMBOLS = /^#[a-zа-яё0-9]{1,19}$/i;
+const ErrorText = {
+  INVALIS_COUNT: `Максимум ${MAX_HASHTAG_COUNT} хэштегов`,
+  NOT_UNIQUE: 'Хэштеги должны быть уникальными',
+  INVALIDE_PATTERN: 'Неправильный хэштег'
 };
 
-const bodyElement = document.body;
-const uploadForm = document.querySelector('.img-upload__form');
-const fileInput = document.querySelector('.img-upload__input');
-const closeButton = document.querySelector('.img-upload__cancel');
-const uploadOverlay = document.querySelector('.img-upload__overlay');
-const hashtagInput = document.querySelector('.text__hashtags');
-const commentInput = document.querySelector('.text__description');
-const submitButton = document.querySelector('.img-upload__submit');
+const formImageUpload = document.querySelector('.img-upload__form');
+const overlayImageUpload = formImageUpload.querySelector('.img-upload__overlay');
+const body = document.querySelector('body');
+const textHashtags = formImageUpload.querySelector('.text__hashtags');
+const buttonImageUpload = formImageUpload.querySelector('.img-upload__submit');
 
-
-const pristine = new Pristine(uploadForm, {
+const pristine = new Pristine(formImageUpload, {
   classTo: 'img-upload__field-wrapper',
   errorTextParent: 'img-upload__field-wrapper',
 });
 
-const getHashtags = (input) => input.toLowerCase().trim().split(/\s+/).filter(Boolean);
-const validateHashtag = (input) => getHashtags(input).every((tag) => HASHTAG_REGEX.test(tag));
-const validateUniqueHashtags = (input) => getHashtags(input).length === new Set(getHashtags(input)).size;
-const validateHashtagLimit = (input) => getHashtags(input).length <= MAX_HASHTAG_COUNT;
-
-pristine.addValidator(hashtagInput, validateHashtag, ErrorMessages.INVALID_HASHTAG);
-pristine.addValidator(hashtagInput, validateUniqueHashtags, ErrorMessages.REPEATED_HASHTAG);
-pristine.addValidator(hashtagInput, validateHashtagLimit, ErrorMessages.HASHTAG_LIMIT);
-pristine.addValidator(commentInput, (value) => value.length <= MAX_COMMENT_LENGTH, ErrorMessages.COMMENT_LENGTH);
-
-const validateForm = () => pristine.validate();
-
-const openUploadModal = () => {
-  uploadOverlay.classList.remove('hidden');
-  bodyElement.classList.add('modal-open');
-  resetScale();
-  resetEffect();
+const showModal = () => {
+  overlayImageUpload.classList.remove('hidden');
+  body.classList.add('modal-open');
   document.addEventListener('keydown', onDocumentKeydown);
 };
 
-const closeUploadModal = () => {
-  uploadForm.reset();
+const hideModal = () => {
+  formImageUpload.reset();
   pristine.reset();
-  uploadOverlay.classList.add('hidden');
-  bodyElement.classList.remove('modal-open');
+  overlayImageUpload.classList.add('hidden');
+  body.classList.remove('modal-open');
   document.removeEventListener('keydown', onDocumentKeydown);
+  resetScale();
+  reset();
 };
 
-const handleFormSubmit = (evt) => {
-  evt.preventDefault();
-  submitButton.disabled = true;
+const normalizeTags = (tagString) => tagString.trim().split(' ').filter((tag) => Boolean(tag.length));
+const isTextFieldFocused = () => document.activeElement === textHashtags || document.activeElement === formImageUpload.querySelector('.text__description');
 
-  if (pristine.validate()) {
-    sendData(
-      () => {
-        showSuccessMessage();
-        closeUploadModal();
-        submitButton.disabled = false;
-      },
-      () => {
-        showErrorMessage();
-        submitButton.disabled = false;
-      },
-      new FormData(uploadForm)
-    );
-  } else {
-    displayFormError();
-    submitButton.disabled = false;
-  }
+const hasValidCount = (value) => normalizeTags(value).length <= MAX_HASHTAG_COUNT;
+const hasValidTags = (value) => normalizeTags(value).every((tag) => VALID_SYMBOLS.test(tag));
+const hasUnidueTags = (value) => {
+  const lowerCaseTags = normalizeTags(value).map((tag) => tag.toLowerCase());
+  return lowerCaseTags.length === new Set(lowerCaseTags).size;
 };
 
 function onDocumentKeydown(evt) {
-  if (isEscapeKey(evt) && !(document.activeElement === hashtagInput || document.activeElement === commentInput)) {
+  if ((isEscapeKey(evt)) && !isTextFieldFocused()) {
     evt.preventDefault();
-    closeUploadModal();
+    hideModal();
   }
 }
 
-hashtagInput.addEventListener('change', validateForm);
-commentInput.addEventListener('change', validateForm);
-fileInput.addEventListener('change', openUploadModal);
-submitButton.addEventListener('click', handleFormSubmit);
-closeButton.addEventListener('click', closeUploadModal);
+const onCancelButtonClick = () => hideModal();
+const onFileInputChange = () => showModal();
+
+const setUpValidators = () => {
+  pristine.addValidator(textHashtags, hasValidCount, ErrorText.INVALID_COUNT, 3, true);
+  pristine.addValidator(textHashtags, hasValidTags, ErrorText.INVALID_PATTERN, 2, true);
+  pristine.addValidator(textHashtags, hasUnidueTags, ErrorText.NOT_UNIQUE, 1, true);
+};
+
+formImageUpload.querySelector('.img-upload__input').addEventListener('change', onFileInputChange);
+formImageUpload.querySelector('.img-upload__cancel').addEventListener('click', onCancelButtonClick);
+setUpValidators();
+init();
+
+const setOnFormSubmit = (callback) => {
+  formImageUpload.addEventListener('submit', async (evt) => {
+    evt.preventDefault();
+    if (pristine.validate()) {
+      buttonImageUpload.disabled = true;
+      await callback(new FormData(formImageUpload));
+      buttonImageUpload.disabled = false;
+    }
+  });
+};
+
+export{ hideModal, setOnFormSubmit };
